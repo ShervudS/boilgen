@@ -1,71 +1,61 @@
-# boilgen README
+# Boilgen
 
-This is the README for your extension "boilgen". After writing up a brief description, we recommend including the following sections.
+**Boilgen** is a powerful VS Code extension that helps you instantly generate folders, files, and boilerplate structures using customizable JSON templates.
 
-## Features
-
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+Whether you're working with components, hooks, pages, or anything else — Boilgen lets you scaffold your project with a single right-click.
 
 ---
 
-## Following extension guidelines
+## 🚀 Features
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+- 🧱 Generate entire folder structures from templates
+- ⚡ Trigger with right-click in the Explorer or via hotkey
+- 🧩 Use placeholder variables like `{name}` in filenames and file contents
+- 📁 Supports nested folders like `styles/{name}.scss`, `ui/{name}.tsx`
+- 📄 Auto-creates `.vscode/component-generator.templates.json` if missing
+- ✨ Customizable via project-level or global configuration
+- 🧠 Fallback to built-in templates (no setup required)
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+<!-- ![Boilgen Example](images/boilgen-demo.gif) -->
 
-## Working with Markdown
+> Tip: You can define multiple entity types like `Component`, `Page`, `Hook` and use different templates for each.
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+---
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+## ⚙️ Requirements
 
-## For more information
+None — Boilgen works out of the box with any project.
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+---
 
-**Enjoy!**
+## 🛠 Extension Settings
+
+This extension contributes the following settings:
+
+| Setting                              | Description                                                                                  |
+| ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `componentGenerator.templatesPath`   | Path to the JSON file with templates (default: `.vscode/component-generator.templates.json`) |
+| `componentGenerator.defaultTemplate` | Default template name to use if not selected manually                                        |
+| `componentGenerator.componentsPath`  | (optional) Path where components should be generated                                         |
+
+---
+
+## 📦 Template Format
+
+Create or edit the JSON template file at:
+
+```json
+{
+  "Component": {
+    "default": {
+      "index.ts": ["export * from './ui/{name}';"],
+      "ui/{name}.tsx": [
+        "import React from 'react';",
+        "",
+        "export const {name} = () => <div>{name}</div>;"
+      ],
+      "styles/{name}.module.scss": [".wrapper { display: flex; }"]
+    }
+  }
+}
+```
