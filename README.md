@@ -40,6 +40,27 @@ This extension contributes the following settings:
 
 ---
 
+## 🧩 Template Variables
+
+Boilgen supports snippet-style variables, similar to VS Code User Snippets.
+
+You can use the following variables inside your template files and filenames:
+
+- `$TM_FILENAME`
+- `$TM_FILENAME_BASE`
+- `$TM_DIRECTORY`
+- `$TM_FILEPATH`
+- `$RELATIVE_FILEPATH`
+- `$WORKSPACE_NAME`
+- `$WORKSPACE_FOLDER`
+- `$CURRENT_YEAR`, `$CURRENT_YEAR_SHORT`
+- `$CURRENT_MONTH`, `$CURRENT_MONTH_NAME`, `$CURRENT_MONTH_NAME_SHORT`
+- `$CURRENT_DATE`
+- `$CURRENT_DAY_NAME`, `$CURRENT_DAY_NAME_SHORT`
+- `$CURRENT_HOUR`, `$CURRENT_MINUTE`, `$CURRENT_SECOND`
+- `$CURRENT_SECONDS_UNIX`
+- `$CURRENT_TIMEZONE_OFFSET`
+
 ## 📦 Template Format
 
 Create or edit the JSON template file at:
@@ -48,13 +69,13 @@ Create or edit the JSON template file at:
 {
   "Component": {
     "default": {
-      "index.ts": ["export * from './ui/{name}';"],
-      "ui/{name}.tsx": [
+      "index.ts": ["export * from './ui/$TM_FILENAME_BASE.tsx';"],
+      "ui/$TM_FILENAME_BASE.tsx": [
         "import React from 'react';",
         "",
-        "export const {name} = () => <div>{name}</div>;"
+        "export const $TM_FILENAME_BASE = () => <div>$TM_FILENAME_BASE</div>;"
       ],
-      "styles/{name}.module.scss": [".wrapper { display: flex; }"]
+      "styles/$TM_FILENAME_BASE.module.scss": [".wrapper { display: flex; }"]
     }
   }
 }

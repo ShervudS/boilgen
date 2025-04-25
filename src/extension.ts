@@ -19,6 +19,50 @@ function getTemplates(templatesPath: string): TemplateGroup | null {
   }
 }
 
+async function replaceSnippetVars(
+  input: string,
+  context: { targetDir: string }
+): Promise<string> {
+  const now = new Date();
+
+  const workspaceFolder =
+    vscode.workspace.workspaceFolders?.[0].uri.fsPath ?? "";
+  const workspaceName = vscode.workspace.name ?? "";
+
+  const targetDir = context.targetDir;
+  const filename = path.basename(targetDir);
+  const filepath = path.join(targetDir, filename);
+
+  const vars: Record<string, string> = {
+    TM_FILENAME: filename,
+    TM_FILENAME_BASE: filename.replace(path.extname(filename), ""),
+    TM_DIRECTORY: targetDir,
+    TM_FILEPATH: filepath,
+    RELATIVE_FILEPATH: path.relative(workspaceFolder, filepath),
+    WORKSPACE_NAME: workspaceName,
+    WORKSPACE_FOLDER: workspaceFolder,
+    CURRENT_YEAR: `${now.getFullYear()}`,
+    CURRENT_YEAR_SHORT: `${now.getFullYear()}`.slice(-2),
+    CURRENT_MONTH: `${now.getMonth() + 1}`.padStart(2, "0"),
+    CURRENT_MONTH_NAME: now.toLocaleDateString(undefined, { month: "long" }),
+    CURRENT_MONTH_NAME_SHORT: now.toLocaleDateString(undefined, {
+      month: "short",
+    }),
+    CURRENT_DATE: `${now.getDate()}`.padStart(2, "0"),
+    CURRENT_DAY_NAME: now.toLocaleDateString(undefined, { weekday: "long" }),
+    CURRENT_DAY_NAME_SHORT: now.toLocaleDateString(undefined, {
+      weekday: "short",
+    }),
+    CURRENT_HOUR: `${now.getHours()}`.padStart(2, "0"),
+    CURRENT_MINUTE: `${now.getMinutes()}`.padStart(2, "0"),
+    CURRENT_SECOND: `${now.getSeconds()}`.padStart(2, "0"),
+    CURRENT_SECONDS_UNIX: Math.floor(now.getTime() / 1000).toString(),
+    CURRENT_TIMEZONE_OFFSET: now.toString().match(/GMT([+-]\d+)/)?.[1] ?? "",
+  };
+
+  return input.replace(/\$([A-Z_]+)/g, (_, varName) => vars[varName] ?? "");
+}
+
 function createDefaultTemplatesFile(targetPath: string) {
   const defaultContent = `{
   "Component": {
@@ -26,13 +70,13 @@ function createDefaultTemplatesFile(targetPath: string) {
       "styles.module.scss": [
         ""
       ],
-      "{name}.tsx": [
+      "$TM_FILENAME_BASE.tsx": [
         "import React from 'react';",
         "",
         "import styles from './styles.module.scss'",
         "",
-        "export const {name} = () => {",
-        "  return <div>{name}</div>;",
+        "export const $TM_FILENAME_BASE = () => {",
+        "  return <div>$TM_FILENAME_BASE</div>;",
         "};"
       ],
       "__tests__/buildName.spec.ts":[
@@ -42,7 +86,7 @@ function createDefaultTemplatesFile(targetPath: string) {
         ""
       ],
       "index.ts": [
-        "export \{{name}\} from './{name}';"
+        "export {$TM_FILENAME_BASE} from './$TM_FILENAME_BASE';"
       ]
     }
   }
@@ -142,24 +186,28 @@ export function activate(context: vscode.ExtensionContext) {
       for (const [fileNameTemplate, contentLines] of Object.entries(
         selectedTemplate
       )) {
-        const parsedFileName = fileNameTemplate.replace(
-          "{name}",
-          componentName
+        const parsedFileName = (
+          await replaceSnippetVars(fileNameTemplate, {
+            targetDir,
+          })
+        ).replace(/\\/g, "/");
+
+        const parsedLines = await Promise.all(
+          contentLines.map((line) =>
+            replaceSnippetVars(line, {
+              targetDir,
+            })
+          )
         );
-        const parsedContent = contentLines
-          .map((line: string) => line.replace(/{name}/g, componentName))
-          .join("\n");
+
+        const parsedContent = parsedLines.join("\n");
 
         const filePath = path.join(targetDir, parsedFileName);
         const fileDir = path.dirname(filePath);
 
-        fs.mkdirSync(fileDir, { recursive: true }); // 💥 создаём вложенные папки
+        fs.mkdirSync(fileDir, { recursive: true });
         fs.writeFileSync(filePath, parsedContent);
       }
-
-      vscode.window.showInformationMessage(
-        `${entityType} '${componentName}' created using '${selectedTemplateName}' template.`
-      );
 
       vscode.window.showInformationMessage(
         `${entityType} '${componentName}' created using '${selectedTemplateName}' template.`
