@@ -10,13 +10,11 @@ Whether you're working with components, hooks, pages, or anything else — Boilg
 
 - 🧱 Generate entire folder structures from templates
 - ⚡ Trigger with right-click in the Explorer or via hotkey
-- 🧩 Use placeholder variables like `{name}` in filenames and file contents
-- 📁 Supports nested folders like `styles/{name}.scss`, `ui/{name}.tsx`
+- 🧩 Use placeholder variables like `$TM_FILENAME_BASE` in filenames and file contents
+- 📁 Supports nested folders like `styles/$TM_FILENAME_BASE.scss`, `ui/$TM_FILENAME_BASE.tsx`
 - 📄 Auto-creates `.vscode/component-generator.templates.json` if missing
 - ✨ Customizable via project-level or global configuration
 - 🧠 Fallback to built-in templates (no setup required)
-
-<!-- ![Boilgen Example](images/boilgen-demo.gif) -->
 
 > Tip: You can define multiple entity types like `Component`, `Page`, `Hook` and use different templates for each.
 
