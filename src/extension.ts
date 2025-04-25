@@ -5,6 +5,11 @@ import * as path from "path";
 type Template = Record<string, string[]>;
 type TemplateGroup = Record<string, Template>;
 
+/**
+ * Reads and parses the templates JSON file.
+ * @param templatesPath - Absolute path to the templates file.
+ * @returns Parsed templates object or null if the file doesn't exist or is invalid.
+ */
 function getTemplates(templatesPath: string): TemplateGroup | null {
   if (!fs.existsSync(templatesPath)) {
     return null;
@@ -19,6 +24,12 @@ function getTemplates(templatesPath: string): TemplateGroup | null {
   }
 }
 
+/**
+ * Replaces snippet-style variables in a template string with actual values.
+ * @param input - String containing snippet variables.
+ * @param context - Context containing the target directory path.
+ * @returns A string with replaced variables.
+ */
 async function replaceSnippetVars(
   input: string,
   context: { targetDir: string }
@@ -63,6 +74,11 @@ async function replaceSnippetVars(
   return input.replace(/\$([A-Z_]+)/g, (_, varName) => vars[varName] ?? "");
 }
 
+/**
+ * Creates a default template file with sample content.
+ * @param targetPath - Path where the template file should be created.
+ */
+
 function createDefaultTemplatesFile(targetPath: string) {
   const defaultContent = `{
   "Component": {
@@ -105,6 +121,9 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
+      /**
+       * Read extension configuration from settings
+       */
       const config = vscode.workspace.getConfiguration("boilgen");
       const userTemplatesPath = config.get<string>("templatesPath");
 
@@ -120,6 +139,9 @@ export function activate(context: vscode.ExtensionContext) {
           : path.join(workspaceFolder, userTemplatesPath)
         : defaultTemplatesPath;
 
+      /**
+       * Load and parse templates
+       */
       let templates = getTemplates(templatesPath);
 
       if (!templates) {
@@ -139,6 +161,9 @@ export function activate(context: vscode.ExtensionContext) {
         }
       }
 
+      /**
+       *  Ask the user to select the type of entity to generate (Component, Page, etc.)
+       */
       const entityType = await vscode.window.showQuickPick(
         Object.keys(templates),
         {
@@ -151,6 +176,9 @@ export function activate(context: vscode.ExtensionContext) {
       }
 
       const typeTemplates = templates[entityType];
+      /**
+       *  Ask the user to select one of the available templates for that type
+       */
       const selectedTemplateName = await vscode.window.showQuickPick(
         Object.keys(typeTemplates),
         {
@@ -172,7 +200,18 @@ export function activate(context: vscode.ExtensionContext) {
       const selectedTemplate = typeTemplates[
         selectedTemplateName
       ] as unknown as Template;
-      const targetDir = path.join(uri.fsPath, componentName);
+
+      const baseDir =
+        uri?.fsPath ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+      if (!baseDir) {
+        vscode.window.showErrorMessage(
+          "No folder selected and no workspace open."
+        );
+        return;
+      }
+
+      const targetDir = path.join(baseDir, componentName);
 
       if (fs.existsSync(targetDir)) {
         vscode.window.showWarningMessage(
@@ -181,8 +220,13 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
+      /**
+       *  Create the base directory for the new entity
+       */
       fs.mkdirSync(targetDir, { recursive: true });
-
+      /**
+       * Loop to create template file, replace variables, and write to disk
+       */
       for (const [fileNameTemplate, contentLines] of Object.entries(
         selectedTemplate
       )) {
