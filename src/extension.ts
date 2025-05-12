@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 
+import { COMMAND } from "./configs";
+
 type Template = Record<string, string[]>;
 type TemplateGroup = Record<string, Template>;
 
@@ -113,9 +115,10 @@ function createDefaultTemplatesFile(targetPath: string) {
 
 export function activate(context: vscode.ExtensionContext) {
   const disposable = vscode.commands.registerCommand(
-    "boilgen.generateFromTemplate",
+    COMMAND.GENERATE_FROM_TEMPLATE,
     async (uri: vscode.Uri) => {
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+
       if (!workspaceFolder) {
         vscode.window.showErrorMessage("No workspace folder open");
         return;
