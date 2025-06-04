@@ -2,7 +2,7 @@
   "name": "boilgen",
   "displayName": "Boilgen",
   "description": "Powerful code generator for VS Code that creates component folders, files and structures from custom JSON templates. Right-click, choose a template, type a name – and you're done.",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "icon": "images/icon.png",
   "engines": {
     "vscode": "^1.99.0"

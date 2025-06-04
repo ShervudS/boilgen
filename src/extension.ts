@@ -80,7 +80,6 @@ async function replaceSnippetVars(
  * Creates a default template file with sample content.
  * @param targetPath - Path where the template file should be created.
  */
-
 function createDefaultTemplatesFile(targetPath: string) {
   const defaultContent = `{
   "Component": {
@@ -118,8 +117,15 @@ async function getBaseDirPath(uri: vscode.Uri | undefined) {
     return uri.fsPath;
   }
 
+  const userClipboardData = await vscode.env.clipboard.readText();
+
   await vscode.commands.executeCommand("copyFilePath");
-  return await vscode.env.clipboard.readText();
+
+  const filePath = await vscode.env.clipboard.readText();
+
+  await vscode.env.clipboard.writeText(userClipboardData);
+
+  return filePath;
 }
 
 /**
