@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 
-import { COMMAND } from "./configs";
+import { COMMAND, MESSAGES } from "./configs";
 
 type Template = Record<string, string[]>;
 type TemplateGroup = Record<string, Template>;
@@ -21,7 +21,7 @@ function getTemplates(templatesPath: string): TemplateGroup | null {
     const raw = fs.readFileSync(templatesPath, "utf-8");
     return JSON.parse(raw) as TemplateGroup;
   } catch (error) {
-    vscode.window.showErrorMessage("Invalid JSON in templates.");
+    vscode.window.showErrorMessage(MESSAGES.ERROR_INVALID_JSON);
     return null;
   }
 }
@@ -104,7 +104,7 @@ function createDefaultTemplatesFile(targetPath: string) {
         ""
       ],
       "index.ts": [
-        "export {$TM_FILENAME_BASE} from './$TM_FILENAME_BASE';"
+        "export { $TM_FILENAME_BASE } from './$TM_FILENAME_BASE';"
       ]
     }
   }
@@ -113,6 +113,48 @@ function createDefaultTemplatesFile(targetPath: string) {
   fs.writeFileSync(targetPath, defaultContent, "utf-8");
 }
 
+async function getBaseDirPath(uri: vscode.Uri | undefined) {
+  if (uri?.fsPath) {
+    return uri.fsPath;
+  }
+
+  await vscode.commands.executeCommand("copyFilePath");
+  return await vscode.env.clipboard.readText();
+}
+
+/**
+ * Resolves the full path to the templates file, based on user config or defaults.
+ *
+ * @param context - The extension context.
+ * @param workspaceFolder - The root workspace folder path.
+ * @returns Absolute path to the templates JSON file.
+ */
+const resolveTemplatesPath = (
+  context: vscode.ExtensionContext,
+  workspaceFolder: string
+): string => {
+  const config = vscode.workspace.getConfiguration("boilgen");
+  const userTemplatesPath = config.get<string>("templatesPath");
+
+  const defaultTemplatesPath = path.join(
+    context.extensionPath,
+    "templates",
+    "boilgen.templates.json"
+  );
+
+  if (!userTemplatesPath) {
+    return defaultTemplatesPath;
+  }
+
+  return path.isAbsolute(userTemplatesPath)
+    ? userTemplatesPath
+    : path.join(workspaceFolder, userTemplatesPath);
+};
+
+const isValidFilePath = (name: string): boolean => {
+  return typeof name === "string" && !/[<>:"|?*]/.test(name);
+};
+
 export function activate(context: vscode.ExtensionContext) {
   const disposable = vscode.commands.registerCommand(
     COMMAND.GENERATE_FROM_TEMPLATE,
@@ -120,27 +162,11 @@ export function activate(context: vscode.ExtensionContext) {
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
 
       if (!workspaceFolder) {
-        vscode.window.showErrorMessage("No workspace folder open");
+        vscode.window.showErrorMessage(MESSAGES.ERROR_NOT_OPEN_WORKSPACE);
         return;
       }
 
-      /**
-       * Read extension configuration from settings
-       */
-      const config = vscode.workspace.getConfiguration("boilgen");
-      const userTemplatesPath = config.get<string>("templatesPath");
-
-      const defaultTemplatesPath = path.join(
-        context.extensionPath,
-        "templates",
-        "boilgen.templates.json"
-      );
-
-      const templatesPath = userTemplatesPath
-        ? path.isAbsolute(userTemplatesPath)
-          ? userTemplatesPath
-          : path.join(workspaceFolder, userTemplatesPath)
-        : defaultTemplatesPath;
+      const templatesPath = resolveTemplatesPath(context, workspaceFolder);
 
       /**
        * Load and parse templates
@@ -150,11 +176,11 @@ export function activate(context: vscode.ExtensionContext) {
       if (!templates) {
         if (templatesPath.includes(".vscode")) {
           createDefaultTemplatesFile(templatesPath);
-          vscode.window.showWarningMessage(
-            "No templates found. A default template file has been created in .vscode."
-          );
+          vscode.window.showWarningMessage(MESSAGES.ERROR_NOT_FOUND_TEMPLATES);
+
           const doc = await vscode.workspace.openTextDocument(templatesPath);
           await vscode.window.showTextDocument(doc);
+
           return;
         } else {
           vscode.window.showErrorMessage(
@@ -204,13 +230,10 @@ export function activate(context: vscode.ExtensionContext) {
         selectedTemplateName
       ] as unknown as Template;
 
-      const baseDir =
-        uri?.fsPath ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      const baseDir = await getBaseDirPath(uri);
 
       if (!baseDir) {
-        vscode.window.showErrorMessage(
-          "No folder selected and no workspace open."
-        );
+        vscode.window.showErrorMessage(MESSAGES.ERROR_NOT_SELECTED_FOLDER);
         return;
       }
 
@@ -233,6 +256,13 @@ export function activate(context: vscode.ExtensionContext) {
       for (const [fileNameTemplate, contentLines] of Object.entries(
         selectedTemplate
       )) {
+        if (!isValidFilePath(fileNameTemplate)) {
+          vscode.window.showErrorMessage(
+            `Invalid file path in template: ${fileNameTemplate}`
+          );
+          continue;
+        }
+
         const parsedFileName = (
           await replaceSnippetVars(fileNameTemplate, {
             targetDir,
